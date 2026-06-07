@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { signOut } from "@/app/actions/auth";
+import ResumeUploader from "@/components/ResumeUploader";
 
 export default async function Dashboard() {
   const supabase = await createClient();
@@ -9,6 +10,13 @@ export default async function Dashboard() {
   if (!user) {
     redirect("/login");
   }
+
+  // Fetch existing resume if any
+  const { data: resume } = await supabase
+    .from("resumes")
+    .select("*")
+    .eq("user_id", user.id)
+    .single();
 
   return (
     <main className="min-h-screen bg-[#F8FAFC] p-8">
@@ -26,12 +34,7 @@ export default async function Dashboard() {
             </button>
           </form>
         </div>
-        <p className="text-gray-600">
-          Welcome, {user.email}
-        </p>
-        <p className="text-gray-400 mt-2">
-          Dashboard coming soon.
-        </p>
+        <ResumeUploader userId={user.id} existingResume={resume} />
       </div>
     </main>
   );
