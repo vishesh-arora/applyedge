@@ -47,20 +47,46 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Storage upload failed" }, { status: 500 });
     }
 
-    // Upsert resume record in database
-    const { data: resume, error: dbError } = await supabase
+    // Check if resume record exists
+    const { data: existing } = await supabase
       .from("resumes")
-      .upsert({
-        user_id: user.id,
-        file_name: file.name,
-        file_path: filePath,
-        extracted_text: extractedText,
-        updated_at: new Date().toISOString(),
-      }, {
-        onConflict: "user_id",
-      })
-      .select()
+      .select("id")
+      .eq("user_id", user.id)
       .single();
+
+    let resume;
+    let dbError;
+
+    if (existing) {
+      // Update existing record
+      const { data, error } = await supabase
+        .from("resumes")
+        .update({
+          file_name: file.name,
+          file_path: filePath,
+          extracted_text: extractedText,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("user_id", user.id)
+        .select()
+        .single();
+      resume = data;
+      dbError = error;
+    } else {
+      // Insert new record
+      const { data, error } = await supabase
+        .from("resumes")
+        .insert({
+          user_id: user.id,
+          file_name: file.name,
+          file_path: filePath,
+          extracted_text: extractedText,
+        })
+        .select()
+        .single();
+      resume = data;
+      dbError = error;
+    }
 
     if (dbError) {
       return NextResponse.json({ error: "Database error" }, { status: 500 });
