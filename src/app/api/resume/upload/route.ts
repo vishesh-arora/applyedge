@@ -1,15 +1,18 @@
-import { createClient } from "@/lib/supabase/server";
+import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
+import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 // @ts-ignore
 import pdfParse from "pdf-parse";
 
 export async function POST(request: Request) {
   try {
-    const supabase = await createClient();
+    const cookieStore = cookies();
+    const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
 
     const { data: { user } } = await supabase.auth.getUser();
+
     if (!user) {
-      return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorised - no session" }, { status: 401 });
     }
 
     const formData = await request.formData();
@@ -17,14 +20,6 @@ export async function POST(request: Request) {
 
     if (!file) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
-    }
-
-    if (file.type !== "application/pdf") {
-      return NextResponse.json({ error: "PDF files only" }, { status: 400 });
-    }
-
-    if (file.size > 5 * 1024 * 1024) {
-      return NextResponse.json({ error: "File too large" }, { status: 400 });
     }
 
     // Extract text from PDF
@@ -44,21 +39,24 @@ export async function POST(request: Request) {
       });
 
     if (storageError) {
-      return NextResponse.json({ error: "Storage upload failed" }, { status: 500 });
+      return NextResponse.json({ error: "Storage upload failed", detail: storageError }, { status: 500 });
     }
 
     // Check if resume record exists
-    const { data: existing } = await supabase
+    const { data: existing, error: fetchError } = await supabase
       .from("resumes")
       .select("id")
       .eq("user_id", user.id)
       .single();
 
+    if (fetchError && fetchError.code !== "PGRST116") {
+      return NextResponse.json({ error: "Fetch error", detail: fetchError }, { status: 500 });
+    }
+
     let resume;
     let dbError;
 
     if (existing) {
-      // Update existing record
       const { data, error } = await supabase
         .from("resumes")
         .update({
@@ -73,7 +71,6 @@ export async function POST(request: Request) {
       resume = data;
       dbError = error;
     } else {
-      // Insert new record
       const { data, error } = await supabase
         .from("resumes")
         .insert({
@@ -89,12 +86,12 @@ export async function POST(request: Request) {
     }
 
     if (dbError) {
-      return NextResponse.json({ error: "Database error" }, { status: 500 });
+      return NextResponse.json({ error: "Database error", detail: dbError }, { status: 500 });
     }
 
     return NextResponse.json({ resume });
 
-  } catch {
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  } catch (err) {
+    return NextResponse.json({ error: "Internal server error", detail: String(err) }, { status: 500 });
   }
 }
