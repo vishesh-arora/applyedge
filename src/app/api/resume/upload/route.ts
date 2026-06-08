@@ -1,18 +1,28 @@
-import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
-import { cookies } from "next/headers";
+import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 // @ts-ignore
 import pdfParse from "pdf-parse";
 
 export async function POST(request: Request) {
   try {
-    const cookieStore = cookies();
-    const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
+    // Get token from Authorization header
+    const authHeader = request.headers.get("Authorization");
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return NextResponse.json({ error: "Unauthorised - no token" }, { status: 401 });
+    }
+    const token = authHeader.replace("Bearer ", "");
 
-    const { data: { user } } = await supabase.auth.getUser();
+    // Create service role client to verify user
+    const supabaseAdmin = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
 
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorised - no session" }, { status: 401 });
+    // Verify the token and get user
+    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
+
+    if (authError || !user) {
+      return NextResponse.json({ error: "Unauthorised - invalid token" }, { status: 401 });
     }
 
     const formData = await request.formData();
@@ -22,16 +32,24 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
     }
 
+    if (file.type !== "application/pdf") {
+      return NextResponse.json({ error: "PDF files only" }, { status: 400 });
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      return NextResponse.json({ error: "File too large" }, { status: 400 });
+    }
+
     // Extract text from PDF
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
     const pdfData = await pdfParse(buffer);
     const extractedText = pdfData.text;
 
-    // Upload PDF to Supabase Storage
+    // Upload to Supabase Storage
     const filePath = `${user.id}/resume.pdf`;
 
-    const { error: storageError } = await supabase.storage
+    const { error: storageError } = await supabaseAdmin.storage
       .from("resumes")
       .upload(filePath, buffer, {
         contentType: "application/pdf",
@@ -43,21 +61,17 @@ export async function POST(request: Request) {
     }
 
     // Check if resume record exists
-    const { data: existing, error: fetchError } = await supabase
+    const { data: existing } = await supabaseAdmin
       .from("resumes")
       .select("id")
       .eq("user_id", user.id)
       .single();
 
-    if (fetchError && fetchError.code !== "PGRST116") {
-      return NextResponse.json({ error: "Fetch error", detail: fetchError }, { status: 500 });
-    }
-
     let resume;
     let dbError;
 
     if (existing) {
-      const { data, error } = await supabase
+      const { data, error } = await supabaseAdmin
         .from("resumes")
         .update({
           file_name: file.name,
@@ -71,7 +85,7 @@ export async function POST(request: Request) {
       resume = data;
       dbError = error;
     } else {
-      const { data, error } = await supabase
+      const { data, error } = await supabaseAdmin
         .from("resumes")
         .insert({
           user_id: user.id,
