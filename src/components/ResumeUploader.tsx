@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { createClient } from "@/lib/supabase/client";
 
 interface Resume {
   id: string;
@@ -37,13 +38,25 @@ export default function ResumeUploader({ userId, existingResume }: Props) {
     setError(null);
     setSuccess(false);
 
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("userId", userId);
-
     try {
+      // Get session token client-side
+      const supabase = createClient();
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session) {
+        setError("Session expired. Please sign in again.");
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("userId", userId);
+
       const res = await fetch("/api/resume/upload", {
         method: "POST",
+        headers: {
+          "Authorization": `Bearer ${session.access_token}`,
+        },
         body: formData,
       });
 
