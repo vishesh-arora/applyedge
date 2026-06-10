@@ -1,8 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { signOut } from "@/app/actions/auth";
-import ResumeUploader from "@/components/ResumeUploader";
-import ResumeAnalyser from "@/components/ResumeAnalyser";
+import DashboardClient from "@/components/DashboardClient";
 
 export default async function Dashboard() {
   const supabase = await createClient();
@@ -11,12 +10,6 @@ export default async function Dashboard() {
   if (!user) {
     redirect("/login");
   }
-
-  const { data: resume } = await supabase
-    .from("resumes")
-    .select("*")
-    .eq("user_id", user.id)
-    .single();
 
   return (
     <main className="min-h-screen bg-[#F8FAFC] p-8">
@@ -34,8 +27,7 @@ export default async function Dashboard() {
             </button>
           </form>
         </div>
-        <ResumeUploader userId={user.id} existingResume={resume} />
-        <ResumeAnalyser userId={user.id} hasResume={!!resume} />
+        <DashboardClient userId={user.id} />
       </div>
     </main>
   );
