@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 interface Resume {
@@ -20,26 +20,6 @@ export default function ResumeUploader({ userId, existingResume, onResumeUpdate 
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [currentResume, setCurrentResume] = useState<Resume | null>(existingResume);
-
-  useEffect(() => {
-    async function fetchExisting() {
-      const supabase = createClient();
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-
-      const res = await fetch("/api/resume/get", {
-        headers: { "Authorization": `Bearer ${session.access_token}` },
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.resume) {
-          setCurrentResume(data.resume);
-          if (onResumeUpdate) onResumeUpdate(data.resume);
-        }
-      }
-    }
-    fetchExisting();
-  }, []);
 
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
