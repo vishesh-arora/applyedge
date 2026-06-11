@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 interface Resume {
@@ -20,6 +21,12 @@ export default function ResumeUploader({ userId, existingResume, onResumeUpdate 
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [currentResume, setCurrentResume] = useState<Resume | null>(existingResume);
+
+  useEffect(() => {
+  if (existingResume) {
+    setCurrentResume(existingResume);
+  }
+}, [existingResume]);
 
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
