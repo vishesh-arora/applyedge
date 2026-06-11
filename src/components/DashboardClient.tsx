@@ -23,7 +23,10 @@ export default function DashboardClient({ userId }: Props) {
     async function fetchResume() {
       const supabase = createClient();
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
+      if (!session) {
+        setLoading(false);
+        return;
+      }
 
       const res = await fetch("/api/resume/get", {
         headers: {
@@ -33,17 +36,13 @@ export default function DashboardClient({ userId }: Props) {
 
       if (res.ok) {
         const data = await res.json();
-        setResume(data.resume);
+        setResume(data.resume || null);
       }
       setLoading(false);
     }
 
     fetchResume();
   }, [userId]);
-
-  function handleResumeUpdate(updatedResume: Resume) {
-    setResume(updatedResume);
-  }
 
   if (loading) {
     return (
@@ -58,7 +57,7 @@ export default function DashboardClient({ userId }: Props) {
       <ResumeUploader
         userId={userId}
         existingResume={resume}
-        onResumeUpdate={handleResumeUpdate}
+        onResumeUpdate={(updatedResume) => setResume(updatedResume)}
       />
       <ResumeAnalyser userId={userId} hasResume={!!resume} />
     </>
