@@ -21,16 +21,9 @@ export default function DashboardClient({ userId }: Props) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function fetchData() {
-      const supabase = createClient();
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        setLoading(false);
-        return;
-      }
+    const supabase = createClient();
 
-      const token = session.access_token;
-
+    async function fetchData(token: string) {
       // Fetch resume
       const resumeRes = await fetch("/api/resume/get", {
         headers: { "Authorization": `Bearer ${token}` },
@@ -52,7 +45,20 @@ export default function DashboardClient({ userId }: Props) {
       setLoading(false);
     }
 
-    fetchData();
+    // Listen for auth state — fires when session is restored from storage
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (session?.access_token) {
+          await fetchData(session.access_token);
+        } else {
+          setLoading(false);
+        }
+      }
+    );
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, [userId]);
 
   if (loading) {
