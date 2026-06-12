@@ -61,15 +61,16 @@ interface AnalysisResult {
 interface Props {
   userId: string;
   hasResume: boolean;
+  savedAnalysis?: AnalysisResult | null;
 }
 
-export default function ResumeAnalyser({ userId, hasResume }: Props) {
+export default function ResumeAnalyser({ userId, hasResume, savedAnalysis }: Props) {
   const [mode, setMode] = useState<"general" | "jd_specific">("general");
   const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
   const [jobDescription, setJobDescription] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<AnalysisResult | null>(null);
+  const [result, setResult] = useState<AnalysisResult | null>(savedAnalysis || null);
   const [activeTab, setActiveTab] = useState<"overview" | "keywords" | "bullets" | "improvements">("overview");
 
   function toggleRole(role: string) {
