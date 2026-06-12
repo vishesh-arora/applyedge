@@ -25,7 +25,7 @@ export default function DashboardClient({ userId }: Props) {
 
     async function fetchData(token: string) {
       // Fetch resume
-      const resumeRes = await fetch("/api/resume/get", {
+      const resumeRes = await fetch("/api/get", {
         headers: {
           "Authorization": `Bearer ${token}`,
           "Cache-Control": "no-store",
@@ -38,7 +38,10 @@ export default function DashboardClient({ userId }: Props) {
 
       // Fetch last analysis
       const analysisRes = await fetch("/api/analyse/last", {
-        headers: { "Authorization": `Bearer ${token}` },
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Cache-Control": "no-store",
+        },
       });
       if (analysisRes.ok) {
         const data = await analysisRes.json();
