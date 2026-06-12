@@ -26,7 +26,10 @@ export default function DashboardClient({ userId }: Props) {
     async function fetchData(token: string) {
       // Fetch resume
       const resumeRes = await fetch("/api/resume/get", {
-        headers: { "Authorization": `Bearer ${token}` },
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Cache-Control": "no-store",
+        },
       });
       if (resumeRes.ok) {
         const data = await resumeRes.json();
