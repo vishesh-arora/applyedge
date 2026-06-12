@@ -17,10 +17,11 @@ interface Props {
 
 export default function DashboardClient({ userId }: Props) {
   const [resume, setResume] = useState<Resume | null>(null);
+  const [lastAnalysis, setLastAnalysis] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function fetchResume() {
+    async function fetchData() {
       const supabase = createClient();
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
@@ -28,20 +29,30 @@ export default function DashboardClient({ userId }: Props) {
         return;
       }
 
-      const res = await fetch("/api/resume/get", {
-        headers: {
-          "Authorization": `Bearer ${session.access_token}`,
-        },
-      });
+      const token = session.access_token;
 
-      if (res.ok) {
-        const data = await res.json();
+      // Fetch resume
+      const resumeRes = await fetch("/api/resume/get", {
+        headers: { "Authorization": `Bearer ${token}` },
+      });
+      if (resumeRes.ok) {
+        const data = await resumeRes.json();
         setResume(data.resume || null);
       }
+
+      // Fetch last analysis
+      const analysisRes = await fetch("/api/analyse/last", {
+        headers: { "Authorization": `Bearer ${token}` },
+      });
+      if (analysisRes.ok) {
+        const data = await analysisRes.json();
+        setLastAnalysis(data.analysis || null);
+      }
+
       setLoading(false);
     }
 
-    fetchResume();
+    fetchData();
   }, [userId]);
 
   if (loading) {
@@ -59,7 +70,11 @@ export default function DashboardClient({ userId }: Props) {
         existingResume={resume}
         onResumeUpdate={(updatedResume) => setResume(updatedResume)}
       />
-      <ResumeAnalyser userId={userId} hasResume={!!resume} />
+      <ResumeAnalyser
+        userId={userId}
+        hasResume={!!resume}
+        savedAnalysis={lastAnalysis}
+      />
     </>
   );
 }
