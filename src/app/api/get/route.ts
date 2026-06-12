@@ -25,7 +25,9 @@ export async function GET(request: Request) {
       .eq("user_id", user.id)
       .single();
 
-    return NextResponse.json({ resume: resume || null });
+    return NextResponse.json({ resume: resume || null }, {
+      headers: { "Cache-Control": "no-store" },
+    });
 
   } catch (err) {
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
