@@ -42,6 +42,9 @@ export async function GET(request: Request) {
       summary_rewrite: analysis.improvement_guide?.summary_rewrite || "",
       tone_check: analysis.improvement_guide?.tone_check || {},
       top_improvements: analysis.improvement_guide?.top_improvements || [],
+      role_fit_score: analysis.improvement_guide?.role_fit_score || null,
+      role_fit_summary: analysis.improvement_guide?.role_fit_summary || null,
+      role_fit_quick_wins: analysis.improvement_guide?.role_fit_quick_wins || [],
       mode: analysis.mode,
       target_roles: analysis.target_roles,
     };
