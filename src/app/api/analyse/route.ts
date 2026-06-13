@@ -275,6 +275,9 @@ Rules:
           summary_rewrite: claudeAnalysis.summary_rewrite,
           tone_check: claudeAnalysis.tone_check,
           top_improvements: claudeAnalysis.top_improvements,
+          role_fit_score: claudeAnalysis.role_fit_score || null,
+          role_fit_summary: claudeAnalysis.role_fit_summary || null,
+          role_fit_quick_wins: claudeAnalysis.role_fit_quick_wins || [],
         },
       })
       .select()
