@@ -48,15 +48,17 @@ interface AnalysisResult {
     is_aligned: boolean;
     comment: string;
   };
-  top_improvements: {
+    top_improvements: {
     priority: number;
     section: string;
     action: string;
     impact: string;
   }[];
+  role_fit_score: number | null;
+  role_fit_summary: string | null;
+  role_fit_quick_wins: string[];
   mode: string;
   target_roles: string[];
-}
 
 interface Props {
   userId: string;
@@ -257,16 +259,32 @@ export default function ResumeAnalyser({ userId, hasResume, savedAnalysis }: Pro
       {/* Results */}
       {result && (
         <div className="mt-8">
-          {/* ATS Score */}
+          {/* Score Cards */}
           <div className={`rounded-xl border p-6 mb-6 ${getScoreBg(result.ats_score)}`}>
             <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-500 mb-1">ATS Score</p>
-                <p className={`text-5xl font-display font-bold ${getScoreColor(result.ats_score)}`}>
-                  {result.ats_score}
-                  <span className="text-2xl text-gray-400">/100</span>
-                </p>
-                <p className="text-xs text-gray-400 mt-1">Based on ATS best practices</p>
+              <div className="flex gap-8">
+                <div>
+                  <p className="text-sm text-gray-500 mb-1">ATS Score</p>
+                  <p className={`text-5xl font-display font-bold ${getScoreColor(result.ats_score)}`}>
+                    {result.ats_score}
+                    <span className="text-2xl text-gray-400">/100</span>
+                  </p>
+                  <p className="text-xs text-gray-400 mt-1">Based on ATS best practices</p>
+                </div>
+                {result.mode === "jd_specific" && result.role_fit_score !== null && (
+                  <div className="border-l border-gray-200 pl-8">
+                    <p className="text-sm text-gray-500 mb-1">Role Fit Score</p>
+                    <p className={`text-5xl font-display font-bold ${getScoreColor(result.role_fit_score)}`}>
+                      {result.role_fit_score}
+                      <span className="text-2xl text-gray-400">/100</span>
+                    </p>
+                    <p className="text-xs text-gray-400 mt-1">
+                      {result.role_fit_score >= 85 ? "Strong Match" :
+                       result.role_fit_score >= 65 ? "Good Match" :
+                       result.role_fit_score >= 40 ? "Average Match" : "Poor Match"}
+                    </p>
+                  </div>
+                )}
               </div>
               <div className="grid grid-cols-1 gap-2 text-right">
                 {Object.entries(result.sub_scores).map(([key, value]) => (
@@ -278,6 +296,27 @@ export default function ResumeAnalyser({ userId, hasResume, savedAnalysis }: Pro
               </div>
             </div>
           </div>
+          
+          {/* Role Fit Summary — Mode B only */}
+          {result.mode === "jd_specific" && result.role_fit_summary && (
+            <div className="bg-[#EEF4FB] rounded-xl p-4 mb-6">
+              <p className="text-sm font-medium text-[#0F4C81] mb-1">Role Fit Summary</p>
+              <p className="text-sm text-gray-600">{result.role_fit_summary}</p>
+              {result.role_fit_quick_wins?.length > 0 && (
+                <div className="mt-3">
+                  <p className="text-xs font-medium text-gray-500 mb-2">Quick Wins</p>
+                  <ul className="space-y-1">
+                    {result.role_fit_quick_wins.map((win, i) => (
+                      <li key={i} className="text-sm text-gray-600 flex gap-2">
+                        <span className="text-[#F5A623]">→</span>
+                        {win}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Tabs */}
           <div className="flex gap-1 mb-6 border-b border-gray-100">
