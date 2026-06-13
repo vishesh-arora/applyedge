@@ -48,7 +48,7 @@ interface AnalysisResult {
     is_aligned: boolean;
     comment: string;
   };
-    top_improvements: {
+  top_improvements: {
     priority: number;
     section: string;
     action: string;
@@ -59,6 +59,7 @@ interface AnalysisResult {
   role_fit_quick_wins: string[];
   mode: string;
   target_roles: string[];
+  }
 
 interface Props {
   userId: string;
