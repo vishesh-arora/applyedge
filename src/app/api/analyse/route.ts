@@ -173,14 +173,17 @@ Return ONLY a valid JSON object with this exact structure, no other text:
     "is_aligned": true or false,
     "comment": "one sentence on seniority alignment"
   },
-  "top_improvements": [
+    "top_improvements": [
     {
       "priority": 1,
       "section": "which section",
       "action": "specific action to take",
       "impact": "why this matters"
     }
-  ]
+  ],
+  "role_fit_score": null,
+  "role_fit_summary": null,
+  "role_fit_quick_wins": []
 }
 
 Rules:
@@ -188,7 +191,10 @@ Rules:
 - top_improvements: list exactly 5 improvements ranked by impact
 - grammar_issues: list maximum 5 most important ones
 - Be specific and actionable, not generic
-- improved bullets must include a metric or quantified outcome`;
+- improved bullets must include a metric or quantified outcome
+- role_fit_score: ONLY populate if a job description is provided. Score 0-100 based on how well the candidate's experience and skills match the specific role requirements. Consider seniority match, domain match, and skills overlap. Set to null for general mode.
+- role_fit_summary: ONLY populate if a job description is provided. 2 sentences max — plain English assessment of fit. Set to null for general mode.
+- role_fit_quick_wins: ONLY populate if a job description is provided. 2-3 specific things to add or change to improve fit for this exact role. Empty array for general mode.`;
 
     const claudeResponse = await anthropic.messages.create({
       model: "claude-sonnet-4-20250514",
@@ -243,9 +249,12 @@ Rules:
       summary_rewrite: claudeAnalysis.summary_rewrite || "",
       tone_check: claudeAnalysis.tone_check || {},
       top_improvements: claudeAnalysis.top_improvements || [],
+      role_fit_score: claudeAnalysis.role_fit_score || null,
+      role_fit_summary: claudeAnalysis.role_fit_summary || null,
+      role_fit_quick_wins: claudeAnalysis.role_fit_quick_wins || [],
       mode,
       target_roles: mode === "general" ? targetRoles : [],
-    };
+      };
 
     // Save to database
     const { data: savedAnalysis, error: dbError } = await supabaseAdmin
